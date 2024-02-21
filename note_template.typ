@@ -9,54 +9,77 @@
     title: none,
     authors: (), // empty array for multiple authors. Here each author is a dictionary of `name: str` and `affiliations: int`
     intitutions: (), // empty array for multiple affiliations
+    // date: none,
     abstract: none,
     show_contents: false,
     two_columns: false,
     document,
     bib_filename: ()
 ) = {
-    set page(paper: "us-letter")
+    set page(paper: "us-letter", margin: (x: 2cm, y: 2cm),)
     set par(justify:true, first-line-indent: 1em)
+    set text(
+        // font: "stix2",
+        size: 10pt
+    )
 
     /// maketitle and abstract
-    {
-        set align(center)
-        text(18pt, weight: "bold")[#title]
+    set align(center)
+    text(12pt, weight: "bold")[#title]
+    linebreak()
+    v(3pt)
+    let n_author = 1;
+    for author in authors {
+        text(author.name)
 
-        v(-7.5pt)
-        let n_author = 1;
-        for author in authors {
-            text(author.name)
-
-            let n_affiliation = 1;
-            for affiliation in author.affiliations {
-                assert(affiliation <= intitutions.len(), message: "affiation label NOT match with the number of intitutions!")
-                text(blue)[$""^#affiliation$]
-                if n_affiliation != author.affiliations.len() {
-                    text(black)[$""^,$]
-                }
-                n_affiliation += 1
+        let n_affiliation = 1;
+        for affiliation in author.affiliations {
+            assert(affiliation <= intitutions.len(), message: "affiation label NOT match with the number of intitutions!")
+            text(blue)[$""^#affiliation$]
+            if n_affiliation != author.affiliations.len() {
+                text(black)[$""^,$]
             }
-            if n_author != authors.len() {
-                [, ]
-            }
-            n_author += 1
-            h(5pt)
+            n_affiliation += 1
         }
-        linebreak()
-        for i in range(0, intitutions.len()) {
-            text(blue)[$""^#(i+1)$]
-            text(black)[_#intitutions.at(i)_]
-            linebreak()
+        if n_author != authors.len() {
+            [, ]
         }
-        v(10pt)
-        set align(left)
-        abstract
-        v(15pt)
+        n_author += 1
+        h(5pt)
     }
+    linebreak()
+    for i in range(0, intitutions.len()) {
+        text(blue)[$""^#(i+1)$]
+        text(black)[_#intitutions.at(i)_]
+        linebreak()
+    }
+    [(Dated: #datetime.today().display())] // default date
+    v(10pt,weak: true)
+    
+    box(
+        width: 40em,
+        // first-line-indent: 1em,
+        [
+            // *Abstract*
+            #set align(left)
+            #h(1em) // manual indent
+            #abstract
+        ]
+    )
+    // abstract
+    v(15pt)
 
     /// customize the appearance
-    show heading: set text(fill: mycolor.celestial_blue) // customize heading style
+    set align(left)
+    set heading(numbering: "I.A.") // customize heading numbering
+    show heading: self => [
+        #set align(center)
+        #text(fill: mycolor.celestial_blue, 10pt)[
+            #v(25pt,weak: true)
+            #self 
+            #v(15pt,weak: true)
+        ] // customize heading style
+    ]
     show link: set text(fill: mycolor.cerise_pink) // customize link color
     show ref: set text(fill: mycolor.cerise_pink) // customize reference color
 
@@ -66,23 +89,37 @@
     /// table-of-contents
     {
         set par(justify:true, first-line-indent: 0em) // turn off first-line-indent for table-of-contents
-        set heading(numbering: "I.1.")
         if show_contents {
-            // formatting table-of-contents
-            show outline.entry: self => {
-                text(fill: mycolor.celestial_blue)[#self]
+            show outline.entry: it => {
+                // we will customize the outline using the original definitions. To avoid infinite recursion, we will use a tag to mark the modified outline entries. The trick is used in https://stackoverflow.com/questions/77031078/how-to-remove-numbers-from-outline
+                let outline_contents =  if it.at("label", default: none) == <modified-tag> {
+                    it // just return itself if is already modified 
+                } else {
+                    [
+                        #outline.entry(
+                            it.level,
+                            it.element,
+                            it.body,
+                            [],  // remove fill
+                            it.page
+                        )<modified-tag>
+                        #linebreak()
+                        #v(-7.5pt, weak: true)
+                    ] 
+                }
+                if it.level == 1 {
+                    v(10pt,weak: true)
+                }
+                if it.level == 1 {
+                    text(fill: mycolor.celestial_blue, weight: "bold")[#outline_contents]
+                } else {
+                    text(fill: mycolor.celestial_blue)[#outline_contents]
+                }
             }
-            show outline.entry.where(
-                level: 1
-            ): self => {
-                // linebreak()
-                v(10pt, weak: true)
-                // [*#self*] // bold for the first level section
-                text(weight: "semibold")[#self]
-            }
+
             outline(
                 title: [Contents],
-                indent: 2em,
+                indent: 1em,
                 depth: 2,
             )
         }
