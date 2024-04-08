@@ -14,7 +14,8 @@
     show_contents: false,
     two_columns: false,
     document,
-    bib_filename: ()
+    bib_filename: (),
+    show_references: false,
 ) = {
     set page(paper: "us-letter", margin: (x: 2cm, y: 2cm),)
     set par(justify:true, first-line-indent: 1em)
@@ -24,67 +25,71 @@
     )
 
     /// maketitle and abstract
-    set align(center)
-    text(12pt, weight: "bold")[#title]
-    linebreak()
-    v(3pt)
-    let n_author = 1;
-    for author in authors {
-        text(author.name)
+    align(center)[
+        #text(12pt, weight: "bold")[#title]
+        #linebreak()
+        #v(3pt)
+        #let n_author = 1;
+        #for author in authors {
+            author.name
 
-        let n_affiliation = 1;
-        for affiliation in author.affiliations {
-            assert(affiliation <= intitutions.len(), message: "affiation label NOT match with the number of intitutions!")
-            text(blue)[$""^#affiliation$]
-            if n_affiliation != author.affiliations.len() {
-                text(black)[$""^,$]
+            let n_affiliation = 1;
+            for affiliation in author.affiliations {
+                assert(affiliation <= intitutions.len(), message: "affiation label NOT match with the number of intitutions!")
+                text(blue)[$""^#affiliation$]
+                if n_affiliation != author.affiliations.len() {
+                    text(black)[$""^,$]
+                }
+                n_affiliation += 1
             }
-            n_affiliation += 1
+            if n_author != authors.len() {
+                [, ]
+            }
+            n_author += 1
+            h(5pt)
         }
-        if n_author != authors.len() {
-            [, ]
+        #linebreak()
+        #for i in range(0, intitutions.len()) {
+            text(blue)[$""^#(i+1)$]
+            text(black)[_#intitutions.at(i)_]
+            linebreak()
         }
-        n_author += 1
-        h(5pt)
-    }
-    linebreak()
-    for i in range(0, intitutions.len()) {
-        text(blue)[$""^#(i+1)$]
-        text(black)[_#intitutions.at(i)_]
-        linebreak()
-    }
-    [(Dated: #datetime.today().display())] // default date
-    v(10pt,weak: true)
+        (Dated: #datetime.today().display()) // default date
+        #v(10pt,weak: true)
+        #box(
+            width: 40em,
+            // first-line-indent: 1em,
+            [
+                // *Abstract*
+                #align(left)[
+                    #h(1em) // manual indent
+                    #abstract
+                ]
+            ]
+        )
+        // abstract
+        #v(15pt)
+    ]
     
-    box(
-        width: 40em,
-        // first-line-indent: 1em,
-        [
-            // *Abstract*
-            #set align(left)
-            #h(1em) // manual indent
-            #abstract
-        ]
-    )
-    // abstract
-    v(15pt)
 
     /// customize the appearance
     set align(left)
     set heading(numbering: "I.A.") // customize heading numbering
     show heading: self => [
-        #set align(center)
-        #text(fill: mycolor.celestial_blue, 10pt)[
-            #v(25pt,weak: true)
-            #self 
-            #v(15pt,weak: true)
-        ] // customize heading style
+        #align(center)[
+            #text(fill: mycolor.celestial_blue, 10pt)[
+                #v(25pt,weak: true)
+                #self 
+                #v(15pt,weak: true)
+            ] // customize heading style
+        ]
     ]
     show link: set text(fill: mycolor.cerise_pink) // customize link color
     show ref: set text(fill: mycolor.cerise_pink) // customize reference color
 
     show emph: set text(fill: mycolor.cerise_pink) // customize emphasis style 
     show strong: set text(fill: mycolor.cerise_pink) // customize strong style
+
 
     /// table-of-contents
     {
@@ -120,7 +125,7 @@
             outline(
                 title: [Contents],
                 indent: 1em,
-                depth: 2,
+                // depth: 2, // infinited depth
             )
         }
         v(15pt)
@@ -134,5 +139,7 @@
         document
     } 
     /// references
-    bibliography(bib_filename, title: "References")
+    if show_references {
+        bibliography(bib_filename, title: "References")
+    }
 }
